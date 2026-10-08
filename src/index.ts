@@ -49,6 +49,7 @@ import {createTileMesh, type CreateTileMeshOptions, type IndicesType, type TileM
 import {GPUInitializationError} from './util/gpu_initialization_error.ts';
 import {EXTENT} from './data/extent.ts';
 
+import type {HeightAnchor} from './util/height_offset.ts';
 import type {ControlPosition, IControl} from './ui/control/control.ts';
 import type {CustomRenderMethod, CustomLayerInterface, CustomRenderMethodInput, CustomLayerProjectionDataParams, CustomTerrainRenderInput, UnwrappedTileIDLiteral} from './style/style_layer/custom_style_layer.ts';
 import type {AnchoredCameraOptions, AnimationOptions, CameraForBoundsOptions, CameraOptions, CameraUpdateTransformFunction, CenterZoomBearing, EaseToOptions, FitBoundsOptions, FlyToOptions, JumpToOptions, PointLike} from './ui/camera.ts';
@@ -296,6 +297,7 @@ export {
     type GetResourceResponse,
     type MapGeoJSONFeature,
     type Alignment,
+    type HeightAnchor,
     type AddProtocolAction,
     type AddProtocolResponseData,
     type SourceClass,

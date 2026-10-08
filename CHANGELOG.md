@@ -1,6 +1,7 @@
 ## main
 ### ✨ Features and improvements
 - Allow negative `fill-extrusion-base` and `fill-extrusion-height` to extrude below ground level, for example underground floor levels ([#8051](https://github.com/maplibre/maplibre-gl-js/issues/8051)) (by [@clement-igonet](https://github.com/clement-igonet))
+- Add `heightOffset` and `heightAnchor` to `Marker` and `Popup`, so they can be placed above the ground like symbols with `symbol-height-offset`, for example on the roof of a building ([#8228](https://github.com/maplibre/maplibre-gl-js/issues/8228)) (by [@clement-igonet](https://github.com/clement-igonet))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
