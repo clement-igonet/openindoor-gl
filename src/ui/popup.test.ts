@@ -11,6 +11,7 @@ const containerWidth = 512;
 const containerHeight = 512;
 // The pixel translate of a popup element: `translate(-50%,-100%) translate(10px,20px)`
 const translateRegex = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/;
+const screenY = (popup: Popup) => parseFloat(popup.getElement().style.transform.match(translateRegex)[2]);
 
 function createMap(options?) {
     options ||= {};
@@ -1144,6 +1145,31 @@ describe('popup', () => {
         elevation = 1000; // the terrain tiles under the popup arrive, then the map settles
         map.fire('idle');
         expect(popup.getElement().style.transform).toBe('translate(-50%,-100%) translate(611px,100px)');
+
+        map.remove();
+    });
+
+    test('Popup with a height offset is drawn above its ground position', () => {
+        const map = createMap({pitch: 60, zoom: 12});
+        const ground = new Popup().setLngLat([0, 0]).setText('ground').addTo(map);
+        const raised = new Popup({heightOffset: 5000}).setLngLat([0, 0]).setText('raised').addTo(map);
+
+        expect(raised.getHeightOffset()).toBe(5000);
+        expect(raised.getHeightAnchor()).toBe('ground');
+        expect(screenY(raised)).toBeLessThan(screenY(ground));
+
+        map.remove();
+    });
+
+    test('setHeightOffset moves an existing popup', () => {
+        const map = createMap({pitch: 60, zoom: 12});
+        const popup = new Popup().setLngLat([0, 0]).setText('x').addTo(map);
+        const atGround = screenY(popup);
+
+        popup.setHeightOffset(5000);
+
+        expect(screenY(popup)).toBeLessThan(atGround);
+        expect(popup.getHeightOffset()).toBe(5000);
 
         map.remove();
     });
