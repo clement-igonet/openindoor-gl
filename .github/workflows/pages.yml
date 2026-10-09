@@ -1,0 +1,39 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v4
+        with:
+          node-version-file: '.nvmrc'
+      - run: npm ci
+      - run: npm run build-prod
+      - run: npm run build-css
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/dist
+          cp -r pages/. _site/
+          cp dist/maplibre-gl.mjs dist/maplibre-gl-worker.mjs dist/maplibre-gl.css _site/dist/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+      - id: deployment
+        uses: actions/deploy-pages@v4

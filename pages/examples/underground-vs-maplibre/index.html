@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Underground, side by side with MapLibre</title>
+<link rel="stylesheet" href="../../dist/maplibre-gl.css">
+<link rel="stylesheet" href="../../lib/compare.css">
+</head>
+<body>
+<div id="head">
+    <h1>Negative <code>fill-extrusion-base</code> and <code>fill-extrusion-height</code>: MapLibre GL JS vs <a href="../../">openindoor-gl</a></h1>
+    <p>Left: <code>maplibre-gl@latest</code> from unpkg. Right: openindoor-gl. Cameras are synced, drag either map.</p>
+</div>
+<div id="bar"><div id="scenes"></div></div>
+<div id="note"></div>
+<div id="panes">
+    <div class="pane"><div class="tag">maplibre-gl</div><div id="map-a" class="map"></div><div id="readout-a" class="readout"></div></div>
+    <div class="pane"><div class="tag">openindoor-gl</div><div id="map-b" class="map"></div><div id="readout-b" class="readout"></div></div>
+</div>
+<script type="module">
+import * as mainLib from 'https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.mjs';
+import * as prLib from '../../dist/maplibre-gl.mjs';
+import {setupCompare} from '../../lib/compare.js';
+function box(center, w, h, bearingDeg = 0) {
+    const [cx, cy] = center;
+    const kx = 1 / (111320 * Math.cos(cy * Math.PI / 180)), ky = 1 / 110540;
+    const r = bearingDeg * Math.PI / 180;
+    const pt = (x, y) => [cx + (x * Math.cos(r) - y * Math.sin(r)) * kx, cy + (x * Math.sin(r) + y * Math.cos(r)) * ky];
+    return [[pt(-w / 2, -h / 2), pt(w / 2, -h / 2), pt(w / 2, h / 2), pt(-w / 2, h / 2), pt(-w / 2, -h / 2)]];
+}
+
+const FLOOR = 4;
+function floors(center, levels, w, h) {
+    return {type: 'FeatureCollection', features: levels.map((level) => ({
+        type: 'Feature',
+        properties: {
+            base: level > 0 ? (level - 1) * FLOOR : level * FLOOR,
+            top: level > 0 ? level * FLOOR - 0.6 : (level + 1) * FLOOR - 0.6,
+            color: level > 0 ? '#4d88d0' : '#e0803f'
+        },
+        geometry: {type: 'Polygon', coordinates: box(center, w + 6 * Math.abs(level), h)}
+    }))};
+}
+
+const SWISSIMAGE = {type: 'raster', tiles: ['https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg'], tileSize: 256, maxzoom: 19, attribution: '© swisstopo'};
+const HOUSE = [7.7715, 46.0115];
+
+setupCompare({mainLib, prLib, initial: 'raster', scenes: {
+    raster: {
+        label: 'Underground floors (GeoJSON)',
+        note: 'Swiss aerial imagery at 50% opacity. Two floors above ground (blue) and three below (orange), with base -4, -8 and -12 m. With maplibre-gl the negative values are clamped to 0, so the underground floors collapse into flat slivers at ground level.',
+        style: {
+            version: 8,
+            sources: {img: SWISSIMAGE, floors: {type: 'geojson', data: floors([8.5402, 47.3779], [2, 1, -1, -2, -3], 90, 40)}},
+            layers: [
+                {id: 'img', type: 'raster', source: 'img', paint: {'raster-opacity': 0.5}},
+                {id: 'floors', type: 'fill-extrusion', source: 'floors', paint: {
+                    'fill-extrusion-base': ['get', 'base'], 'fill-extrusion-height': ['get', 'top'],
+                    'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': 0.9}}
+            ]
+        },
+        camera: {center: [8.5402, 47.3771], zoom: 17.6, pitch: 72, bearing: 15}
+    },
+    mvt: {
+        label: 'Basements (vector tiles)',
+        note: 'OpenFreeMap buildings, ground layers at 20% opacity, plus a basement slab from the same features: base -10 m, height -2 m (orange).',
+        style: 'https://tiles.openfreemap.org/styles/liberty',
+        onStyle(map) {
+            for (const l of map.getStyle().layers) {
+                if (l.type === 'fill') map.setPaintProperty(l.id, 'fill-opacity', 0.2);
+                if (l.type === 'background') map.setPaintProperty(l.id, 'background-opacity', 0.2);
+                if (l.type === 'symbol') map.setLayoutProperty(l.id, 'visibility', 'none');
+            }
+            map.addLayer({id: 'basements', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 13, paint: {
+                'fill-extrusion-base': -10, 'fill-extrusion-height': -2,
+                'fill-extrusion-color': '#e0803f', 'fill-extrusion-opacity': 0.9}});
+        },
+        camera: {center: [2.2478, 48.8862], zoom: 16.6, pitch: 62, bearing: -20}
+    },
+    terrain: {
+        label: 'On a slope (terrain)',
+        note: 'Terrain on, a building on a 45% slope near Zermatt, base -30 m, height 20 m. maplibre-gl: the walls stop at the ground height of the centroid and float over the downhill side. openindoor-gl: they reach into the slope.',
+        style: {
+            version: 8,
+            sources: {
+                img: SWISSIMAGE,
+                dem: {type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 14},
+                house: {type: 'geojson', data: {type: 'FeatureCollection', features: [
+                    {type: 'Feature', properties: {}, geometry: {type: 'Polygon', coordinates: box(HOUSE, 80, 30, 90)}}
+                ]}}
+            },
+            terrain: {source: 'dem', exaggeration: 1},
+            layers: [
+                {id: 'img', type: 'raster', source: 'img'},
+                {id: 'house', type: 'fill-extrusion', source: 'house', paint: {
+                    'fill-extrusion-base': -30, 'fill-extrusion-height': 20,
+                    'fill-extrusion-color': '#4d88d0', 'fill-extrusion-opacity': 1}}
+            ]
+        },
+        camera: {center: [HOUSE[0], HOUSE[1] - 0.0001], zoom: 17.4, pitch: 76, bearing: -70}
+    }
+}});
+</script>
+</body></html>

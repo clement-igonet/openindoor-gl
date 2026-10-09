@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gare de Lyon, level by level</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../dist/maplibre-gl.css">
+<style>
+  body { margin: 0; font: 14px/1.5 system-ui, sans-serif; color: #1c2430; }
+  #map { position: absolute; inset: 0; }
+  #panel { position: absolute; z-index: 2; top: 12px; left: 12px; width: 262px; padding: 14px;
+           background: rgba(255,255,255,.96); border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+  h1 { margin: 0 0 2px; font-size: 15px; }
+  .sub { margin: 0 0 10px; color: #5a6572; font-size: 12px; }
+  ul { list-style: none; margin: 0 0 8px; padding: 0; }
+  li { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+  li:hover { background: #eef2f7; }
+  li.on { background: #e4572e; color: #fff; font-weight: 600; }
+  li.under { color: #7a5c3e; }
+  li.on.under { color: #fff; }
+  .lvl { width: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+  .cnt { margin-left: auto; font-size: 11px; opacity: .7; }
+  label.opt { display: block; font-size: 12px; margin-top: 6px; }
+  .note { margin-top: 10px; padding-top: 8px; border-top: 1px solid #e3e6ea; font-size: 11px; color: #5a6572; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h1>Gare de Lyon, level by level</h1>
+  <p class="sub">Indoor geometry straight from OpenStreetMap, drawn at each level's own height. <a href="../../">All examples</a></p>
+  <ul id="levels"></ul>
+  <label class="opt">pull the levels apart
+    <input type="range" id="spacing" min="1" max="20" step="1" value="10" style="width:100%">
+    <span id="spacingOut" style="font-variant-numeric:tabular-nums"></span>
+  </label>
+  <label class="opt"><input type="checkbox" id="cut"> ground plate, cut open</label>
+  <label class="opt"><input type="checkbox" id="ghosts" checked> show the other levels</label>
+  <p class="note" id="note"></p>
+</div>
+<div id="map"></div>
+
+<script type="module">
+import * as maplibregl from '../../dist/maplibre-gl.mjs';
+
+const CENTRE = [2.37568, 48.84387];   // centre of the mapped indoor data
+let exaggeration = 10;                  // how far apart the levels are pulled, x real height
+let spacing = 50;                       // metres between levels on screen
+const REAL_H = 5;                       // roughly what a station level really is
+const LEVELS = [2, 1, 0, -1, -2, -3, -4];
+const NAMES = {
+    2: 'Upper floor', 1: 'Hall Diderot / Le Train Bleu', 0: 'Main line platforms',
+    '-1': 'Metro and interchange', '-2': 'RER A', '-3': 'RER D', '-4': 'Lower RER'
+};
+const at = (l) => `;${l};`;
+const KIND_COLOUR = [
+    'match', ['get', 'kind'],
+    'platform', '#e0a458',
+    'room', '#b9c6d6',
+    'corridor', '#d7e0ea',
+    'area', '#c9d5e2',
+    '#cdd8e4'
+];
+
+let selected = 0;
+const markers = [];
+
+const map = window.__map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/bright',
+    center: CENTRE,
+    zoom: 16.7,
+    pitch: 68,
+    bearing: -32,
+    antialias: true
+});
+
+// a plate with the station punched out of it, sunk below ground so the lower levels stay visible
+const D_LNG = 0.00392, D_LAT = 0.00180;   // the station's own extent, 573 x 401 m
+const box = (sx, sy) => [[
+    [CENTRE[0] - D_LNG * sx, CENTRE[1] - D_LAT * sy], [CENTRE[0] + D_LNG * sx, CENTRE[1] - D_LAT * sy],
+    [CENTRE[0] + D_LNG * sx, CENTRE[1] + D_LAT * sy], [CENTRE[0] - D_LNG * sx, CENTRE[1] + D_LAT * sy],
+    [CENTRE[0] - D_LNG * sx, CENTRE[1] - D_LAT * sy]
+]];
+const PIT_DEPTH = -26 * 4.6;
+const groundOpen = {type: 'Feature', properties: {base: PIT_DEPTH},
+    geometry: {type: 'Polygon', coordinates: [box(1.20, 1.52)[0], box(1.06, 1.35)[0]]}};
+const groundShut = {type: 'Feature', properties: {base: -0.1},
+    geometry: {type: 'Polygon', coordinates: box(1.20, 1.52)}};
+
+map.on('load', async () => {
+    const [shapes, pois] = await Promise.all([
+        fetch('gare-de-lyon.geojson').then(r => r.json()),
+        fetch('gare-de-lyon-pois.geojson').then(r => r.json())
+    ]);
+    window.__pois = pois;
+
+    window.__shapes = shapes;
+    map.addSource('indoor', {type: 'geojson', data: shapes});
+    map.addSource('current', {type: 'geojson', data: explode(shapes)});
+    map.addSource('pois', {type: 'geojson', data: forLevel(pois, 0)});
+    map.addSource('ground', {type: 'geojson', data: groundShut});
+
+    // the station's own buildings would sit on top of the floor plan, so take them out of the
+    // way with a distance filter rather than switching the whole layer off
+    const perimeter = {type: 'Polygon', coordinates: box(1.06, 1.35)};
+    for (const layer of map.getStyle().layers) {
+        if (layer['source-layer'] === 'building') {
+            const existing = map.getFilter(layer.id);
+            const away = ['>', ['distance', perimeter], 0];
+            map.setFilter(layer.id, existing ? ['all', existing, away] : away);
+        }
+    }
+
+    map.addLayer({
+        id: 'ground', type: 'fill-extrusion', source: 'ground',
+        layout: {visibility: 'none'},
+        paint: {'fill-extrusion-color': '#7d6b58', 'fill-extrusion-base': ['get', 'base'],
+                'fill-extrusion-height': 0, 'fill-extrusion-opacity': 1}
+    });
+
+    map.addLayer({
+        id: 'levels-ghost', type: 'fill-extrusion', source: 'current',
+        filter: ['!=', ['get', 'level'], selected],
+        paint: {
+            'fill-extrusion-color': ['case', ['<', ['get', 'level'], 0], '#a4907c', '#9fb0c4'],
+            'fill-extrusion-base': ['get', 'elev'],
+            'fill-extrusion-height': ['+', ['get', 'elev'], 0.8],
+            'fill-extrusion-opacity': 0.45
+        }
+    });
+
+    map.addLayer({
+        id: 'level-current', type: 'fill-extrusion', source: 'current',
+        filter: ['==', ['get', 'level'], selected],
+        paint: {
+            'fill-extrusion-color': KIND_COLOUR,
+            'fill-extrusion-base': ['get', 'elev'],
+            'fill-extrusion-height': ['+', ['get', 'elev'], 0.9],
+            'fill-extrusion-opacity': 0.97
+        }
+    });
+
+    map.addLayer({
+        id: 'level-names', type: 'symbol', source: 'pois',
+        layout: {
+            'text-field': ['get', 'name'],
+            'text-font': ['Noto Sans Regular'],
+            'text-size': 11,
+            'text-anchor': 'bottom',
+            'text-offset': [0, -0.3],
+            'text-max-width': 9,
+            'symbol-height-offset': ['+', ['get', 'elev'], 1.4],
+            'symbol-height-anchor': 'absolute'
+        },
+        paint: {'text-color': '#12202f', 'text-halo-color': 'rgba(255,255,255,.92)', 'text-halo-width': 1.5}
+    });
+
+    applySpacing();
+    select(0);
+});
+
+function explode(collection) {
+    const out = [];
+    for (const f of collection.features) {
+        for (const raw of f.properties.lv.split(';')) {
+            if (raw === '') continue;
+            const level = Number(raw);
+            if (!LEVELS.includes(level)) continue;
+            out.push({...f, properties: {...f.properties, level, elev: level * spacing}});
+        }
+    }
+    return {type: 'FeatureCollection', features: out};
+}
+
+function forLevel(collection, level) {
+    return {type: 'FeatureCollection',
+            features: explode(collection).features.filter(f => f.properties.level === level)};
+}
+
+function placeMarkers() {
+    for (const m of markers) m.remove();
+    markers.length = 0;
+    const pois = forLevel(window.__pois, selected).features;
+    for (const f of pois.slice(0, 6)) {
+        const marker = new maplibregl.Marker({
+            color: selected < 0 ? '#b0764a' : '#e4572e',
+            heightOffset: selected * spacing + 1,
+            heightAnchor: 'ground'
+        })
+            .setLngLat(f.geometry.coordinates)
+            .setPopup(new maplibregl.Popup({offset: 22})
+                .setText(`${f.properties.name} — level ${selected}`))
+            .addTo(map);
+        markers.push(marker);
+    }
+    return pois.length;
+}
+
+function select(level) {
+    selected = level;
+    map.getSource('pois').setData(forLevel(window.__pois, level));
+    map.setFilter('level-current', ['==', ['get', 'level'], level]);
+    map.setFilter('levels-ghost', ['!=', ['get', 'level'], level]);
+    const named = placeMarkers();
+    for (const li of document.querySelectorAll('#levels li')) li.classList.toggle('on', +li.dataset.level === level);
+    document.getElementById('note').textContent =
+        `${NAMES[level]} · about ${level * REAL_H} m in reality · ${named} named places, first 6 as markers.`;
+}
+
+const list = document.getElementById('levels');
+for (const l of LEVELS) {
+    const li = document.createElement('li');
+    li.dataset.level = l;
+    li.className = l < 0 ? 'under' : '';
+    li.innerHTML = `<span class="lvl">${l}</span><span>${NAMES[l]}</span><span class="cnt">${l * REAL_H} m</span>`;
+    li.addEventListener('click', () => select(l));
+    list.appendChild(li);
+}
+const spacingInput = document.getElementById('spacing');
+const spacingOut = document.getElementById('spacingOut');
+function applySpacing() {
+    exaggeration = Number(spacingInput.value);
+    spacing = exaggeration * REAL_H;
+    spacingOut.textContent = exaggeration === 1 ?
+        `true scale, ${REAL_H} m apart` :
+        `x${exaggeration} — ${spacing} m apart on screen, really about ${REAL_H} m`;
+    map.getSource('current').setData(explode(window.__shapes));
+    const depth = Math.min(...LEVELS) * spacing - 8;
+    groundOpen.properties.base = depth;
+    if (document.getElementById('cut').checked) map.getSource('ground').setData(groundOpen);
+    select(selected);
+}
+spacingInput.addEventListener('input', applySpacing);
+
+document.getElementById('cut').addEventListener('change', (e) => {
+    map.setLayoutProperty('ground', 'visibility', e.target.checked ? 'visible' : 'none');
+    map.getSource('ground').setData(groundOpen);
+});
+document.getElementById('ghosts').addEventListener('change', (e) =>
+    map.setLayoutProperty('levels-ghost', 'visibility', e.target.checked ? 'visible' : 'none'));
+
+window.__select = (l) => { select(l); return true; };
+</script>
+</body>
+</html>

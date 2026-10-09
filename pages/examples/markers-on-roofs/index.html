@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Markers on building roofs</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../dist/maplibre-gl.css">
+<style>
+    body, html { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #map { position: absolute; inset: 0; }
+    .note { position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(0,0,0,.82); color: #fff;
+            padding: 10px 14px; border-radius: 4px; font: 500 13px/1.5 system-ui, sans-serif; max-width: 26em; }
+    .note code { color: #9ae6b4; }
+    .note b { color: #ffd580; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="note">
+    A standard <b>Marker on the roof of every building</b>: <code>heightOffset</code> is the building's
+    own <code>render_height</code>
+    (<a href="https://github.com/clement-igonet/openindoor-gl" style="color:#9cf">openindoor-gl</a>, <a href="../../" style="color:#9cf">all examples</a>).<br>
+    Click a marker to select its building and see its height.
+</div>
+<script type="module">
+import * as maplibregl from '../../dist/maplibre-gl.mjs';
+
+const map = new maplibregl.Map({
+    container: 'map',
+    center: [-74.0090, 40.7075],
+    zoom: 15.5,
+    pitch: 55,
+    bearing: -20,
+    hash: true,
+    maxPitch: 85,
+    style: 'https://tiles.openfreemap.org/styles/bright'
+});
+window.map = map;
+
+let selectedId = null;
+const markers = new Map();          // building id -> Marker
+
+function centroid(geometry) {
+    const ring = geometry.type === 'Polygon' ? geometry.coordinates[0] : geometry.coordinates[0][0];
+    let x = 0, y = 0;
+    for (const [lng, lat] of ring) { x += lng; y += lat; }
+    return [x / ring.length, y / ring.length];
+}
+
+function poiNameAt(lngLat) {
+    const p = map.project(lngLat);
+    const layers = map.getStyle().layers.filter(l => l.type === 'symbol' && /poi/.test(l.id)).map(l => l.id);
+    if (!layers.length) return null;
+    const box = [[p.x - 22, p.y - 22], [p.x + 22, p.y + 22]];
+    const hit = map.queryRenderedFeatures(box, {layers}).find(f => f.properties?.name);
+    return hit ? hit.properties.name : null;
+}
+
+function select(id) {
+    if (selectedId !== null) {
+        map.setFeatureState({source: 'osm', sourceLayer: 'building', id: selectedId}, {selected: false});
+    }
+    selectedId = selectedId === id ? null : id;
+    if (selectedId !== null) {
+        map.setFeatureState({source: 'osm', sourceLayer: 'building', id: selectedId}, {selected: true});
+    }
+}
+
+function refreshMarkers() {
+    const features = map.queryRenderedFeatures({layers: ['buildings']})
+        .filter(f => f.id !== undefined && (f.properties.render_height ?? 0) >= 40);
+    // one marker per building, the tallest ones first, capped so the view stays readable
+    const byId = new Map();
+    for (const f of features) if (!byId.has(f.id)) byId.set(f.id, f);
+    const chosen = [...byId.values()]
+        .sort((a, b) => b.properties.render_height - a.properties.render_height)
+        .slice(0, 30);
+    const keep = new Set(chosen.map(f => f.id));
+
+    for (const [id, marker] of markers) if (!keep.has(id)) { marker.remove(); markers.delete(id); }
+
+    for (const f of chosen) {
+        if (markers.has(f.id)) continue;
+        const at = centroid(f.geometry);
+        const height = Math.round(f.properties.render_height);
+        const name = poiNameAt(at);
+        const marker = new maplibregl.Marker({heightOffset: height, heightAnchor: 'ground'})
+            .setLngLat(at)
+            .setPopup(new maplibregl.Popup({offset: 24}).setText(name ? `${name}, ${height} m` : `${height} m`))
+            .addTo(map);
+        marker.getElement().addEventListener('click', () => select(f.id));
+        markers.set(f.id, marker);
+    }
+}
+
+map.on('load', () => {
+    map.addSource('osm', {type: 'vector', url: 'https://tiles.openfreemap.org/planet'});
+    map.addLayer({
+        id: 'buildings', type: 'fill-extrusion', source: 'osm', 'source-layer': 'building',
+        minzoom: 14,
+        paint: {
+            'fill-extrusion-color': [
+                'case',
+                ['boolean', ['feature-state', 'selected'], false], '#ff8c00',
+                '#cfd6de'
+            ],
+            'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 12],
+            'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+            'fill-extrusion-opacity': 0.95
+        }
+    });
+    map.on('idle', refreshMarkers);
+    // clicking a building selects it too
+    map.on('click', 'buildings', (e) => { if (e.features?.[0]?.id !== undefined) select(e.features[0].id); });
+});
+</script>
+</body>
+</html>
