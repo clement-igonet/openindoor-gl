@@ -17,7 +17,7 @@ Live at **https://clement-igonet.github.io/openindoor-gl/**, built from `main` o
 - [Markers on building roofs](https://clement-igonet.github.io/openindoor-gl/examples/markers-on-roofs/): a `Marker` on every tall building, `heightOffset` from `render_height`.
 - [Underground, side by side with MapLibre](https://clement-igonet.github.io/openindoor-gl/examples/underground-vs-maplibre/): `maplibre-gl@latest` vs openindoor-gl, synced cameras, three scenes.
 
-Examples are plain HTML files under [`pages/examples/`](pages/examples/), each loading `dist/maplibre-gl.mjs` built by the Pages workflow. Add one: a folder with an `index.html` and a `thumb.png`, plus a card in [`pages/index.html`](pages/index.html).
+Examples are plain HTML files under [`pages/examples/`](https://github.com/clement-igonet/openindoor-gl/tree/main/pages/examples), each loading `dist/maplibre-gl.mjs` built by the Pages workflow. Add one: a folder with an `index.html` and a `thumb.png`, plus a card in [`pages/index.html`](https://github.com/clement-igonet/openindoor-gl/blob/main/pages/index.html).
 
 ## Usage
 
