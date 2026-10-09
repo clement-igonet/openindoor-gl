@@ -17,6 +17,7 @@
     "alpha-value-notation": "number"
   },
   "ignoreFiles": [
-      "dist/**/*.css"
+      "dist/**/*.css",
+      "pages/**/*.css"
   ]
 }
