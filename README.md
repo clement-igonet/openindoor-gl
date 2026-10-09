@@ -46,7 +46,7 @@ The [MapLibre GL JS documentation](https://maplibre.org/maplibre-gl-js/docs/) ap
 
 ## Development
 
-Same as upstream: `npm ci`, `npm run build-dev`, `npm run test-unit`, `npm run test-render`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVELOPING.md](DEVELOPING.md).
+Same as upstream: `npm ci`, `npm run build-dev`, `npm run test-unit`, `npm run test-render`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Upstream is merged regularly; each patch lives on its own branch and is proposed upstream when possible.
 
