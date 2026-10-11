@@ -9,6 +9,16 @@ A tracking fork of [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) 
 
 Everything else is MapLibre GL JS, same API, same style spec. Base: maplibre-gl 6.13.0.
 
+## Examples
+
+Live at **https://clement-igonet.github.io/openindoor-gl/**, built from `main` on every push:
+
+- [Gare de Lyon, level by level](https://clement-igonet.github.io/openindoor-gl/examples/gare-de-lyon-levels/): seven OSM indoor levels, four below ground, markers following the selected level.
+- [Markers on building roofs](https://clement-igonet.github.io/openindoor-gl/examples/markers-on-roofs/): a `Marker` on every tall building, `heightOffset` from `render_height`.
+- [Underground, side by side with MapLibre](https://clement-igonet.github.io/openindoor-gl/examples/underground-vs-maplibre/): `maplibre-gl@latest` vs openindoor-gl, synced cameras, three scenes.
+
+Examples are plain HTML files under [`pages/examples/`](https://github.com/clement-igonet/openindoor-gl/tree/main/pages/examples), each loading `dist/maplibre-gl.mjs` built by the Pages workflow. Add one: a folder with an `index.html` and a `thumb.png`, plus a card in [`pages/index.html`](https://github.com/clement-igonet/openindoor-gl/blob/main/pages/index.html).
+
 ## Usage
 
 ```html
@@ -36,7 +46,7 @@ The [MapLibre GL JS documentation](https://maplibre.org/maplibre-gl-js/docs/) ap
 
 ## Development
 
-Same as upstream: `npm ci`, `npm run build-dev`, `npm run test-unit`, `npm run test-render`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [DEVELOPING.md](DEVELOPING.md).
+Same as upstream: `npm ci`, `npm run build-dev`, `npm run test-unit`, `npm run test-render`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 Upstream is merged regularly; each patch lives on its own branch and is proposed upstream when possible.
 

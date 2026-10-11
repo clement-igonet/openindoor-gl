@@ -284,6 +284,9 @@
     "**/*.html",
     "**/*.md"
   ],
+  "ignorePaths": [
+    "pages/**"
+  ],
   "ignoreRegExpList": [
     "@\\w+",
     "\\[\\w+",
