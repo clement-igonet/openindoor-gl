@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>openindoor-gl examples</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg: #f6f7f9; --card: #fff; --ink: #1c2430; --muted: #5a6572; --accent: #e4572e; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+  header { padding: 40px 16px 24px; max-width: 1040px; margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 30px; }
+  header p { margin: 0; color: var(--muted); max-width: 60em; }
+  header a { color: var(--accent); }
+  main { max-width: 1040px; margin: 0 auto; padding: 0 16px 48px; display: grid; gap: 20px;
+         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .card { display: block; background: var(--card); border-radius: 10px; overflow: hidden; color: inherit; text-decoration: none;
+          box-shadow: 0 1px 3px rgba(0,0,0,.12); transition: box-shadow .15s; }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+  .card img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #dde3ea; }
+  .card .body { padding: 12px 14px 14px; }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card p { margin: 0; color: var(--muted); font-size: 13px; }
+  .card code { font-size: 12px; background: #eef2f7; padding: 1px 4px; border-radius: 3px; }
+  footer { max-width: 1040px; margin: 0 auto; padding: 0 16px 40px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>openindoor-gl</h1>
+  <p>A tracking fork of <a href="https://github.com/maplibre/maplibre-gl-js">MapLibre GL JS</a> for indoor and 3D building maps.
+     Same API, same styles, plus underground floors and elevated markers.
+     <a href="https://github.com/clement-igonet/openindoor-gl">Source and README</a>.</p>
+</header>
+<main>
+  <a class="card" href="examples/gare-de-lyon-levels/">
+    <img src="examples/gare-de-lyon-levels/thumb.png" alt="Gare de Lyon, seven levels pulled apart, the station levels below ground drawn under the map">
+    <div class="body">
+      <h2>Gare de Lyon, level by level</h2>
+      <p>Seven levels from OpenStreetMap indoor data, four of them below ground, drawn at their own height with
+         negative <code>fill-extrusion-base</code>. Markers follow the selected level with <code>heightOffset</code>.</p>
+    </div>
+  </a>
+  <a class="card" href="examples/markers-on-roofs/">
+    <img src="examples/markers-on-roofs/thumb.png" alt="Lower Manhattan 3D buildings with a marker on the roof of each tall one">
+    <div class="body">
+      <h2>Markers on building roofs</h2>
+      <p>A standard <code>Marker</code> on top of every tall building in Lower Manhattan: <code>heightOffset</code>
+         is the building's own <code>render_height</code>. Popups open at the roof too.</p>
+    </div>
+  </a>
+  <a class="card" href="examples/underground-vs-maplibre/">
+    <img src="examples/underground-vs-maplibre/thumb.png" alt="Side by side: MapLibre GL JS clamps underground floors to the ground, openindoor-gl draws them below">
+    <div class="body">
+      <h2>Underground, side by side with MapLibre</h2>
+      <p>Left: the latest <code>maplibre-gl</code> from unpkg. Right: openindoor-gl. Three scenes, synced cameras:
+         GeoJSON floors, vector-tile basements, a building on a slope with terrain.</p>
+    </div>
+  </a>
+</main>
+<footer>BSD 3-Clause. Derived from MapLibre GL JS; not affiliated with or endorsed by MapLibre.</footer>
+</body>
+</html>

@@ -1,0 +1,22 @@
+body, html { margin: 0; height: 100%; font: 14px/1.45 system-ui, sans-serif; background: #0b0e14; color: #dde3ea; }
+#head { padding: 10px 14px 4px; }
+#head h1 { font-size: 16px; margin: 0 0 4px; }
+#head p { margin: 2px 0; color: #9aa4b2; }
+#head a { color: #7ee0ff; }
+#head code { color: #7ee0ff; }
+#bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 14px; }
+#scenes { display: flex; flex-wrap: wrap; gap: 6px; }
+#scenes button { background: #1b2230; color: #dde3ea; border: 1px solid #2f3a4d; border-radius: 4px; padding: 5px 10px; font: inherit; cursor: pointer; }
+#scenes button.on { background: #7ee0ff; color: #04121c; border-color: #7ee0ff; }
+#note { padding: 0 14px 8px; color: #c9d2dd; }
+#panes { display: flex; gap: 8px; padding: 0 8px 8px; height: calc(100% - 190px); min-height: 360px; }
+.pane { position: relative; flex: 1; display: flex; flex-direction: column; }
+.pane .map { position: relative; flex: 1; border-radius: 6px; overflow: hidden; }
+.tag { position: absolute; top: 8px; left: 8px; z-index: 2; background: rgba(0,0,0,.85); color: #fff;
+       padding: 5px 9px; border-radius: 4px; font: 600 13px ui-monospace, monospace; }
+.readout { min-height: 20px; padding: 4px 2px 0; font: 12px ui-monospace, monospace; color: #9aa4b2; white-space: pre-wrap; }
+.readout canvas { display: block; margin-top: 6px; max-width: 100%; border-radius: 4px; }
+@media (max-width: 760px) {
+    #panes { flex-direction: column; height: auto; }
+    .pane .map { height: 46vh; flex: none; }
+}
