@@ -7,7 +7,7 @@ A tracking fork of [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) 
 - **Underground floors**: `fill-extrusion-base` and `fill-extrusion-height` accept negative values and extrude below ground level ([maplibre#8051](https://github.com/maplibre/maplibre-gl-js/issues/8051)).
 - **Elevated markers and popups**: `heightOffset` and `heightAnchor` options place a `Marker` or `Popup` at a height above the ground or at an absolute elevation, with terrain and globe ([maplibre#8228](https://github.com/maplibre/maplibre-gl-js/issues/8228)).
 
-Everything else is MapLibre GL JS, same API, same style spec. Base: maplibre-gl 6.13.0.
+Everything else is MapLibre GL JS, same API, same style spec. Base: maplibre-gl 6.14.0.
 
 ## Examples
 

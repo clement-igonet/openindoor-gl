@@ -6,7 +6,7 @@ It is part of the MapLibre ecosystem, with a counterpart for Android, iOS and ot
 
 ## Quickstart
 
-<iframe src="./examples/display-a-globe-with-a-vector-map.html" width="100%" height="400px" style="border:none"></iframe>
+<iframe src="https://maplibre.org/maplibre-gl-js/docs/examples/display-a-globe-with-a-vector-map.html" width="100%" height="400px" style="border:none"></iframe>
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@^6.3.0/dist/maplibre-gl.css" />
@@ -221,7 +221,7 @@ Pick your setup:
     maplibregl.setWorkerUrl('/path/to/maplibre-gl-worker.mjs');
     ```
 
-    See the [Display a map](./examples/display-a-map.md) example for a runnable version.
+    See the [Display a map](https://maplibre.org/maplibre-gl-js/docs/examples/display-a-map/) example for a runnable version.
 
 ## CSP Directives
 
